@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IPC Probe</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #222;
+        background: #fff;
+      }
+
+      main {
+        max-width: 760px;
+        padding: 48px;
+      }
+
+      pre {
+        overflow: auto;
+        padding: 16px;
+        border: 1px solid #ccd5dd;
+        border-radius: 6px;
+        background: #f5f8fa;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>IPC Probe</h1>
+      <p id="summary">Checking child Webview IPC access...</p>
+      <pre id="result">{}</pre>
+    </main>
+    <script>
+      const summary = document.querySelector("#summary");
+      const result = document.querySelector("#result");
+
+      async function runProbe() {
+        const internals = window.__TAURI_INTERNALS__;
+        const probe = {
+          url: window.location.href,
+          hasGlobalTauri: Boolean(window.__TAURI__),
+          hasInternals: Boolean(internals),
+          invokeType: typeof internals?.invoke,
+          status: "pending"
+        };
+
+        if (typeof internals?.invoke !== "function") {
+          probe.status = "blocked-no-ipc-bridge";
+          return probe;
+        }
+
+        try {
+          probe.version = await internals.invoke("plugin:app|version");
+          probe.status = "unexpected-ipc-success";
+        } catch (error) {
+          probe.status = "blocked-by-tauri-acl";
+          probe.error = String(error);
+        }
+
+        return probe;
+      }
+
+      runProbe().then((probe) => {
+        const passed = probe.status !== "unexpected-ipc-success";
+        summary.textContent = passed ? "IPC blocked for this child Webview." : "IPC unexpectedly succeeded.";
+        document.title = `IPC Probe: ${probe.status}`;
+        result.textContent = JSON.stringify(probe, null, 2);
+      });
+    </script>
+  </body>
+</html>
