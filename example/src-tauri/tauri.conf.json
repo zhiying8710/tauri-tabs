@@ -2,11 +2,11 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Tauri Tabs",
   "version": "0.1.0",
-  "identifier": "com.zuxo.tauritabs",
+  "identifier": "com.tauri.tauritabs",
   "build": {
-    "beforeDevCommand": "npm run dev",
+    "beforeDevCommand": "npm run dev:example",
     "devUrl": "http://127.0.0.1:1420",
-    "beforeBuildCommand": "npm run build",
+    "beforeBuildCommand": "npm run build:example",
     "frontendDist": "../dist"
   },
   "app": {

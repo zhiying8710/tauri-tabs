@@ -6,25 +6,75 @@ Native Tauri v2 tabbed webviews. The main UI renders the tab strip and state, wh
 
 ```bash
 npm install
-npm run tauri dev
+npm run tauri:dev
 ```
 
-For frontend-only checks:
+For library checks:
 
 ```bash
 npm run build
 ```
 
+For example frontend checks:
+
+```bash
+npm run build:example
+```
+
 For Rust/Tauri checks:
 
 ```bash
-cd src-tauri
+cd example/src-tauri
 cargo check
 ```
 
+## Install From GitHub
+
+This package does not need Vue, React, or another frontend framework. It is a plain TypeScript/DOM library for Tauri v2 apps.
+
+Install it directly from GitHub:
+
+```bash
+npm install github:zhiying8710/tauri-tabs
+```
+
+or:
+
+```bash
+npm install https://github.com/zhiying8710/tauri-tabs.git
+```
+
+The Git dependency runs `npm run build:lib` through `prepare`, so consumers import the generated `dist` entry:
+
+```ts
+import { createTauriTabs } from "tauri-tabs";
+import "tauri-tabs/style.css";
+
+const tabs = createTauriTabs(document.querySelector("#tabs")!, {
+  newTabButton: true,
+  defaultTab: {
+    title: "Local",
+    url: "/local-page.html",
+    active: true
+  }
+});
+```
+
+Required consumer-side Tauri permissions:
+
+- `core:webview:allow-create-webview`
+- `core:webview:allow-webview-show`
+- `core:webview:allow-webview-hide`
+- `core:webview:allow-webview-close`
+- `core:webview:allow-set-webview-position`
+- `core:webview:allow-set-webview-size`
+- `core:webview:allow-set-webview-focus`
+
+If the consuming app scopes permissions with `webviews`, grant these permissions to the main UI webview that creates and manages the tab webviews.
+
 ## Full Feature Example App
 
-The default app in `src/main.ts` is a full feature example, not a minimal landing page. It demonstrates:
+The app in `example/` is a full feature example, not a minimal landing page. It demonstrates:
 
 - New API: `open`, `update`, `move`, `getActiveTab`, `getPreviousTab`, `getNextTab`, `show`, `close`.
 - Compatibility API: `addTab`, `src`, `iconURL`, `badge.classname`, `auth_check`, `partition_generator`, `ready`.
@@ -36,7 +86,8 @@ The default app in `src/main.ts` is a full feature example, not a minimal landin
 ## New API
 
 ```ts
-import { createTauriTabs } from "./src/tauri-tabs";
+import { createTauriTabs } from "tauri-tabs";
+import "tauri-tabs/style.css";
 
 const tabs = createTauriTabs(document.querySelector("#app")!, {
   className: "my-tab-shell",
@@ -163,8 +214,10 @@ This project does not reuse Electron's `<webview>` tag, but it exposes the commo
 
 ```html
 <tab-group new-tab-button="true" sortable="true"></tab-group>
-<script type="module" src="/src/tauri-tabs.ts"></script>
 <script type="module">
+  import "tauri-tabs/style.css";
+  import "tauri-tabs";
+
   const tabGroup = document.querySelector("tab-group");
 
   tabGroup.setDefaultTab({
@@ -265,7 +318,7 @@ Attributes accepted on `<tab-group>`:
 
 ## Security
 
-The app grants Tauri permissions only to the main UI webview by using `webviews: ["main"]` in `src-tauri/capabilities/default.json`. Dynamic tab webviews use labels such as `tauri-tab-tab-1`, so remote pages do not receive Tauri IPC permissions.
+The example app grants Tauri permissions only to the main UI webview by using `webviews: ["main"]` in `example/src-tauri/capabilities/default.json`. Dynamic tab webviews use labels such as `tauri-tab-tab-1`, so remote pages do not receive Tauri IPC permissions.
 
 Required permissions for the main UI are:
 

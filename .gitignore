@@ -1,6 +1,7 @@
 node_modules
 dist
-src-tauri/target
-src-tauri/gen
+example/dist
+example/src-tauri/target
+example/src-tauri/gen
 .DS_Store
 *.log

@@ -1,6 +1,6 @@
 import "./style.css";
 
-import { createTauriTabs, type TabController, type TabState, type TauriTabsApi } from "./tauri-tabs";
+import { createTauriTabs, type TabController, type TabState, type TauriTabsApi } from "../../src/tauri-tabs";
 
 declare global {
   interface Window {

@@ -3,6 +3,8 @@ import { TabsUI } from "./tabs-ui";
 import type { OpenTabOptions, TabDefinition, TauriTabsApi, TauriTabsEventName, TauriTabsHandler, TauriTabsOptions } from "./types";
 import { WebviewHost } from "./webview-host";
 
+const BaseHTMLElement: typeof HTMLElement = typeof HTMLElement === "undefined" ? (class {} as unknown as typeof HTMLElement) : HTMLElement;
+
 export function createTauriTabs(rootElement: HTMLElement, options: TauriTabsOptions = {}): TauriTabsApi {
   const ui = new TabsUI(rootElement, options);
   const host = new WebviewHost(ui.viewContainer);
@@ -65,7 +67,7 @@ export function createTauriTabs(rootElement: HTMLElement, options: TauriTabsOpti
   return api;
 }
 
-export class TauriTabGroupElement extends HTMLElement {
+export class TauriTabGroupElement extends BaseHTMLElement {
   private api: TauriTabsApi | null = null;
 
   connectedCallback() {

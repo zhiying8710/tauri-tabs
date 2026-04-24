@@ -11,18 +11,19 @@
 ## Verification Checklist
 
 - [x] `npm run build`
+- [x] `npm run build:example`
 - [x] `cargo check`
-- [x] Smoke test tab open/activate/close/sort in `npm run tauri dev`
+- [x] Smoke test tab open/activate/close/sort in `npm run tauri:dev`
 - [x] Resize keeps active webview below the tab bar
 - [x] Remote tab has no Tauri IPC access
 - [x] `sessionKey` maps to a stable Tauri storage option
 
 ## Verification Notes
 
-- Static verification completed with `npm run build` and `cargo check`.
+- Static verification completed with `npm run build`, `npm run build:example`, and `cargo check`.
 - Static security verification completed: permissions are scoped to the `main` webview, while tab webviews use `tauri-tab-*` labels.
 - Static session verification completed: `sessionKey` deterministically maps to `dataStoreIdentifier` on macOS and `sessions/<key>` data directories elsewhere.
-- GUI launch verification completed with `npm run tauri dev`.
+- GUI launch verification completed with `npm run tauri:dev`.
 - GUI smoke checks completed in the debug `.app` bundle so desktop automation could target the macOS bundle id.
 - GUI smoke checks covered opening a local tab, activating a remote tab, closing the active tab, moving tab order, and resizing the window with the active webview below the tab bar.
 - Extended GUI checks covered active/background open, rename, badge update, URL recreation, hidden/visible tab headers, previous/next activation, blocked `beforeOpen`, compat `addTab`, protected close abort, force close, default new tab, tab move, and regular close.
@@ -49,11 +50,15 @@
 - [x] Session and webview option examples
 - [x] Active tab inspector and tab list controls
 - [x] Custom shell/tab/active-tab classes, per-tab class updates, badge classes, and CSS variable theming
+- [x] GitHub dependency install metadata, package exports, generated type declarations, and standalone style CSS
+- [x] Full feature example app moved under `example/`
 
 ## Compatibility Notes
 
 - Electron's DOM `<webview>` is replaced by Tauri native `Webview`; `tab.webview` returns a Tauri handle when available.
 - Electron-only load/crash/DOM-ready events are mapped where Tauri exposes equivalent lifecycle information, with exact limitations documented in `README.md`.
+- Direct GitHub installation is supported through package `exports` and a `prepare` build; npm registry publishing is not required.
+- The repository root is the installable library package; the Tauri demo app lives under `example/`.
 
 ## Notes
 

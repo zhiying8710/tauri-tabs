@@ -1,13 +1,55 @@
 {
   "name": "tauri-tabs",
   "version": "0.1.0",
+  "author": "zhiying8710 <zhiying8710@hotmail.com>",
   "private": true,
   "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "style": "./dist/style.css",
+  "files": [
+    "dist",
+    "src/event-bus.ts",
+    "src/index.ts",
+    "src/tab-handle.ts",
+    "src/tab-manager.ts",
+    "src/tabs-ui.ts",
+    "src/tauri-tabs.css",
+    "src/tauri-tabs.ts",
+    "src/types.ts",
+    "src/utils.ts",
+    "src/webview-host.ts",
+    "README.md",
+    "TASKS.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./style.css": "./dist/style.css",
+    "./tauri-tabs.css": "./dist/style.css",
+    "./package.json": "./package.json"
+  },
+  "sideEffects": [
+    "./dist/style.css",
+    "./src/tauri-tabs.css"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhiying8710/tauri-tabs.git"
+  },
   "scripts": {
-    "dev": "vite --host 127.0.0.1 --port 1420",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
-    "tauri": "tauri"
+    "build": "npm run build:lib",
+    "build:lib": "vite build --config vite.lib.config.ts && tsc -p tsconfig.lib.json && node scripts/copy-style.mjs",
+    "build:example": "tsc -p tsconfig.example.json && vite build --config example/vite.config.ts",
+    "dev:example": "vite --config example/vite.config.ts --host 127.0.0.1 --port 1420",
+    "prepare": "npm run build:lib",
+    "preview:example": "vite preview --config example/vite.config.ts",
+    "tauri:dev": "tauri dev --config example/src-tauri/tauri.conf.json",
+    "tauri:build": "tauri build --config example/src-tauri/tauri.conf.json"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.10.1"
