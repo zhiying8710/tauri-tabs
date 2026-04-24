@@ -2,7 +2,7 @@
 name = "tauri-tabs"
 version = "0.1.0"
 description = "Native Tauri tabbed webview demo"
-authors = ["zuxo"]
+authors = ["mozzie"]
 edition = "2021"
 rust-version = "1.77.2"
 
