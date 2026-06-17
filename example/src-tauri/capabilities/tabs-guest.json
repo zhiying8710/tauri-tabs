@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "tab-guest",
+  "description": "Allows child tab webviews (tauri-tab-*) to push ipc-messages up to the host. They get no other Tauri IPC access.",
+  "webviews": ["tauri-tab-*"],
+  "permissions": ["tabs:guest"]
+}

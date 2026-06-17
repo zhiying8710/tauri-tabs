@@ -1,0 +1,22 @@
+[package]
+name = "tauri-plugin-tabs"
+version = "0.1.0"
+description = "Rust 端 host-guest 通信桥，为 tauri-tabs 的原生多 webview 标签页提供 navigate/eval/devtools/host-guest 消息能力"
+authors = ["zhiying8710 <zhiying8710@hotmail.com>"]
+edition = "2021"
+rust-version = "1.77.2"
+# Tauri plugin 约定：links 必须等于 package.name，用于编译期权限（ACL）收集。
+links = "tauri-plugin-tabs"
+
+[dependencies]
+tauri = { version = "2", features = ["unstable"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[features]
+# 透传到 tauri 的 devtools，使 release 构建也能按需为 tab webview 开 devtools；
+# 不开启时 open_devtools 在 release 下安全地变为 no-op。
+devtools = ["tauri/devtools"]
+
+[build-dependencies]
+tauri-plugin = { version = "2", features = ["build"] }

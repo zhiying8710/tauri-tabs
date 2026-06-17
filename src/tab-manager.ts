@@ -434,6 +434,10 @@ export class TabManager {
     }
     if (typeof partition === "string") {
       options.sessionKey = partition;
+      options.webviewAttributes = {
+        ...(options.webviewAttributes ?? {}),
+        partition
+      };
     }
 
     const tabAuth = await options.auth_check?.(api, options);

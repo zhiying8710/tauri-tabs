@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-eval-webview"
+description = "Enables the eval_webview command without any pre-configured scope."
+commands.allow = ["eval_webview"]
+
+[[permission]]
+identifier = "deny-eval-webview"
+description = "Denies the eval_webview command without any pre-configured scope."
+commands.deny = ["eval_webview"]

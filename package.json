@@ -20,6 +20,7 @@
     "src/types.ts",
     "src/utils.ts",
     "src/webview-host.ts",
+    "src/guest-runtime.js",
     "README.md",
     "TASKS.md"
   ],
@@ -31,6 +32,8 @@
     },
     "./style.css": "./dist/style.css",
     "./tauri-tabs.css": "./dist/style.css",
+    "./guest": "./dist/guest.js",
+    "./guest.js": "./dist/guest.js",
     "./package.json": "./package.json"
   },
   "sideEffects": [

@@ -3,5 +3,7 @@ dist
 example/dist
 example/src-tauri/target
 example/src-tauri/gen
+# Rust 构建产物（所有 crate，含 tauri-plugin-tabs/target）
+target/
 .DS_Store
 *.log

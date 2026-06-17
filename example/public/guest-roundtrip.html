@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Guest roundtrip</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #222;
+        background: #fff;
+      }
+      main {
+        max-width: 760px;
+        padding: 32px;
+      }
+      button {
+        font-size: 14px;
+        padding: 8px 14px;
+        margin-bottom: 12px;
+        cursor: pointer;
+      }
+      pre {
+        overflow: auto;
+        padding: 16px;
+        border: 1px solid #ccd5dd;
+        border-radius: 6px;
+        background: #f5f8fa;
+        min-height: 120px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Guest ↔ Host roundtrip</h1>
+      <p>验证 tauri-plugin-tabs 的双向桥：点击向 host 上报，host 会回推一条消息。</p>
+      <button id="ping" type="button">sendToHost('DATA_REQUEST', {type:'PING'})</button>
+      <pre id="log"></pre>
+    </main>
+    <!--
+      自包含的端到端验证：内联一个最小 guest 桥（等价于 src/guest-runtime.js 的核心），
+      不引外部文件，直接用 __TAURI_INTERNALS__.invoke 验证 plugin 链路是否打通：
+        - guest → host：invoke('plugin:tabs|emit_to_host')，host 的 ipc-message 监听应收到。
+        - host → guest：host 调 tab.webview.send(...)，plugin 经 eval 调用本页 __receive。
+    -->
+    <script>
+      (function () {
+        var log = document.getElementById("log");
+        function line(message) {
+          log.textContent = new Date().toLocaleTimeString() + "  " + message + "\n" + log.textContent;
+        }
+
+        // host → guest 接收端（plugin 的 emit_to_webview 经 eval 调用它）。
+        window.__TAURI_TABS_GUEST__ = {
+          __receive: function (event, payload) {
+            line("host → guest  " + event + ": " + JSON.stringify(payload));
+          }
+        };
+
+        function invoke(cmd, args) {
+          var internals = window.__TAURI_INTERNALS__;
+          if (!internals || typeof internals.invoke !== "function") {
+            return Promise.reject(new Error("tauri ipc bridge unavailable"));
+          }
+          return internals.invoke(cmd, args);
+        }
+
+        document.getElementById("ping").addEventListener("click", function () {
+          invoke("plugin:tabs|emit_to_host", {
+            channel: "DATA_REQUEST",
+            args: [{ type: "PING", t: Date.now() }]
+          })
+            .then(function () {
+              line("guest → host  sent DATA_REQUEST");
+            })
+            .catch(function (error) {
+              line("sendToHost failed: " + error);
+            });
+        });
+
+        line("guest ready — click the button to ping the host");
+      })();
+    </script>
+  </body>
+</html>

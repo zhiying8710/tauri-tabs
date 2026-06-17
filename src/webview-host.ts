@@ -1,4 +1,6 @@
 import { LogicalPosition, LogicalSize } from "@tauri-apps/api/dpi";
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { Webview, type WebviewOptions } from "@tauri-apps/api/webview";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
@@ -9,6 +11,7 @@ interface HostedView {
   tabId: TabId;
   label: string;
   webview: Webview;
+  dispose: Array<() => void>;
   closed: boolean;
   created: boolean;
   desiredVisible: boolean;
@@ -66,11 +69,12 @@ export class WebviewHost {
   async create(tab: TabState) {
     const bounds = await this.getNativeBounds();
     const options = this.buildOptions(tab, bounds);
-    const webview = new Webview(this.appWindow, tab.label, options);
+    const webview = this.decorateWebview(tab, new Webview(this.appWindow, tab.label, options));
     const hosted: HostedView = {
       tabId: tab.id,
       label: tab.label,
       webview,
+      dispose: [],
       closed: false,
       created: false,
       desiredVisible: tab.active
@@ -128,6 +132,7 @@ export class WebviewHost {
       }
     } finally {
       if (this.views.get(tabId) === hosted) {
+        hosted.dispose.forEach((dispose) => dispose());
         this.views.delete(tabId);
       }
     }
@@ -172,6 +177,8 @@ export class WebviewHost {
         await hosted.webview.hide();
       }
       this.delegate?.viewCreated(tabId);
+      this.dispatchCompatEvent(hosted, "dom-ready", { target: hosted.webview });
+      this.dispatchCompatEvent(hosted, "did-finish-load", { target: hosted.webview });
     } catch (error) {
       this.handleError(tabId, hosted, error);
     }
@@ -182,6 +189,92 @@ export class WebviewHost {
       return;
     }
     this.delegate?.viewError(tabId, toErrorMessage(error), error);
+    this.dispatchCompatEvent(hosted, "did-fail-load", { target: hosted.webview, error });
+  }
+
+  private decorateWebview(tab: TabState, webview: Webview) {
+    const compat = webview as Webview & Record<string, any>;
+    const listeners = new Map<string, Set<(event: any) => void>>();
+    const partition = typeof tab.webviewAttributes?.partition === "string" ? tab.webviewAttributes.partition : tab.sessionKey;
+
+    compat.partition = partition;
+    compat.src = tab.url;
+    compat.webviewAttributes = tab.webviewAttributes ?? {};
+    compat.__tauriTabsListeners = listeners;
+
+    compat.addEventListener = (eventName: string, handler: (event: any) => void, options?: { once?: boolean } | boolean) => {
+      const once = typeof options === "object" && options?.once === true;
+      const wrapped = once
+        ? (event: any) => {
+            compat.removeEventListener(eventName, wrapped);
+            handler(event);
+          }
+        : handler;
+      const set = listeners.get(eventName) ?? new Set<(event: any) => void>();
+      set.add(wrapped);
+      listeners.set(eventName, set);
+
+      if (eventName === "ipc-message" && !compat.__tauriTabsIpcUnlistenPromise) {
+        compat.__tauriTabsIpcUnlistenPromise = listen<any>("tauri-tabs:ipc-message", (event) => {
+          const payload = event.payload;
+          if (!payload || payload.label !== tab.label) {
+            return;
+          }
+          this.dispatchCompatEventByWebview(compat, "ipc-message", {
+            target: compat,
+            channel: payload.channel,
+            args: payload.args ?? [],
+            payload
+          });
+        }).then((unlisten) => {
+          compat.__tauriTabsIpcUnlisten = unlisten;
+          const hosted = this.views.get(tab.id);
+          if (!hosted || hosted.closed) {
+            // webview 在 listen 注册完成前已关闭：立即解绑，避免全局事件监听泄漏。
+            unlisten();
+          } else {
+            hosted.dispose.push(unlisten);
+          }
+          return unlisten;
+        });
+      }
+    };
+
+    compat.removeEventListener = (eventName: string, handler: (event: any) => void) => {
+      listeners.get(eventName)?.delete(handler);
+    };
+
+    compat.loadURL = async (url: string) => {
+      compat.src = url;
+      await invoke("plugin:tabs|navigate_webview", { label: tab.label, url });
+    };
+    compat.loadUrl = compat.loadURL;
+    compat.send = async (event: string, payload: unknown) => {
+      await invoke("plugin:tabs|emit_to_webview", { label: tab.label, event, payload });
+    };
+    compat.openDevTools = async () => {
+      await invoke("plugin:tabs|open_devtools", { label: tab.label });
+    };
+    compat.executeJavaScript = async (script: string) => {
+      await invoke("plugin:tabs|eval_webview", { label: tab.label, script });
+    };
+
+    return compat as Webview;
+  }
+
+  private dispatchCompatEvent(hosted: HostedView, eventName: string, event: any) {
+    this.dispatchCompatEventByWebview(hosted.webview as Webview & Record<string, any>, eventName, event);
+  }
+
+  private dispatchCompatEventByWebview(webview: Webview & Record<string, any>, eventName: string, event: any) {
+    const listeners = webview.__tauriTabsListeners as Map<string, Set<(event: any) => void>> | undefined;
+    for (const handler of listeners?.get(eventName) ?? []) {
+      try {
+        handler(event);
+      } catch (error) {
+        console.error(error);
+      }
+    }
   }
 
   private scheduleSync() {

@@ -1,0 +1,26 @@
+"$schema" = "schemas/schema.json"
+
+# host 类能力：驱动子 tab webview（导航 / 推消息 / 执行脚本 / devtools）。
+# 只应授予主 UI webview。
+[[permission]]
+identifier = "host"
+description = "Allows the main UI webview to drive child tab webviews: navigate, push messages, eval scripts and open devtools."
+commands.allow = [
+    "navigate_webview",
+    "emit_to_webview",
+    "eval_webview",
+    "open_devtools",
+]
+
+# guest 能力：子 tab webview 向 host 上报一条 ipc-message。
+# 授予 tauri-tab-* 子 webview，是它们唯一能调用的命令。
+[[permission]]
+identifier = "guest"
+description = "Allows a child tab webview to push one ipc-message up to the host."
+commands.allow = ["emit_to_host"]
+
+# 便捷集合：host + guest 全部能力（单 webview 全授时使用，一般不推荐用于不受信的子页）。
+[[set]]
+identifier = "default"
+description = "Host controls plus the guest upstream channel."
+permissions = ["host", "guest"]

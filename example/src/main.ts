@@ -71,6 +71,7 @@ appRoot.innerHTML = `
         <button id="openLocalButton" type="button">Open local</button>
         <button id="openCompatButton" type="button">Compat addTab</button>
         <button id="openBlockedButton" type="button">Try blocked URL</button>
+        <button id="guestRoundtripButton" type="button">Guest roundtrip</button>
       </div>
 
       <div class="demo-actions">
@@ -275,6 +276,26 @@ function wireButtons() {
   onClick("#nextButton", () => tabs.getNextTab()?.activate());
   onClick("#closeButton", () => requireActiveTab()?.close());
   onClick("#forceCloseButton", () => requireActiveTab()?.close(true));
+
+  onClick("#guestRoundtripButton", () => tabs.addTab({
+    title: "Guest roundtrip",
+    src: "/guest-roundtrip.html",
+    active: true,
+    badge: "ipc",
+    ready: (tab) => {
+      const wv = tab.webview as Record<string, (...args: unknown[]) => unknown> | null;
+      if (!wv) {
+        pushLog("guest roundtrip: webview not ready");
+        return;
+      }
+      // host 收 guest → host 上报，并回推一条 host → guest，验证双向桥。
+      wv.addEventListener("ipc-message", (event: unknown) => {
+        const message = event as { channel: string; args: unknown[] };
+        pushLog(`guest → host ipc-message: ${message.channel} ${JSON.stringify(message.args)}`);
+        void wv.send("RENDER_DATA", { reply: "PONG", at: Date.now() });
+      });
+    }
+  }));
 }
 
 function wireEvents() {

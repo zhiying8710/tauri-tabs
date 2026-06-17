@@ -17,6 +17,10 @@ export class TabHandle implements TabController {
     return this.manager.getWebview(this.id);
   }
 
+  get webviewAttributes() {
+    return this.state?.webviewAttributes;
+  }
+
   get element() {
     return Array.from(document.querySelectorAll<HTMLElement>("[data-tab-id]"))
       .find((element) => element.dataset.tabId === this.id) ?? null;

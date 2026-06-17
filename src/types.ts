@@ -152,6 +152,7 @@ export interface TabController {
   readonly id: TabId;
   readonly label: string;
   readonly webview: unknown | null;
+  readonly webviewAttributes?: Record<string, unknown>;
   readonly element: HTMLElement | null;
   readonly state: TabState | null;
   setTitle(title: string): Promise<TabController>;

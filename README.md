@@ -60,17 +60,32 @@ const tabs = createTauriTabs(document.querySelector("#tabs")!, {
 });
 ```
 
-Required consumer-side Tauri permissions:
+Required consumer-side Tauri setup:
 
-- `core:webview:allow-create-webview`
-- `core:webview:allow-webview-show`
-- `core:webview:allow-webview-hide`
-- `core:webview:allow-webview-close`
-- `core:webview:allow-set-webview-position`
-- `core:webview:allow-set-webview-size`
-- `core:webview:allow-set-webview-focus`
+1. Register the companion Rust plugin in your shell's `tauri::Builder`, with the Cargo dependency
+   `tauri-plugin-tabs = { git = "https://github.com/zhiying8710/tauri-tabs", package = "tauri-plugin-tabs" }`:
 
-If the consuming app scopes permissions with `webviews`, grant these permissions to the main UI webview that creates and manages the tab webviews.
+   ```rust
+   tauri::Builder::default()
+       .plugin(tauri_plugin_tabs::init())
+   ```
+
+2. Grant permissions:
+
+   - Main UI webview (creates/manages tabs): the seven `core:webview:*` below **plus `tabs:host`**.
+   - Dynamic tab webviews (`tauri-tab-*`): **`tabs:guest`** — its only capability, allowing just `emit_to_host`.
+
+   ```
+   core:webview:allow-create-webview
+   core:webview:allow-webview-show
+   core:webview:allow-webview-hide
+   core:webview:allow-webview-close
+   core:webview:allow-set-webview-position
+   core:webview:allow-set-webview-size
+   core:webview:allow-set-webview-focus
+   ```
+
+If you scope capabilities with `webviews`, give the `core:webview:*` + `tabs:host` set to the main UI webview, and `tabs:guest` to `tauri-tab-*`.
 
 ## Full Feature Example App
 
@@ -288,8 +303,12 @@ Compatibility event notes:
 | `partition_generator` | Supported; return a string to set `sessionKey`, return `false` to cancel |
 | `auth_check` | Supported; return `false` to cancel |
 | `ready(tab)` | Supported after the tab handle is created |
-| `tab.webview` | Returns the Tauri `Webview` handle when available, not an Electron DOM node |
-| `tab.webview.loadURL(...)` | Use `tabGroup.update(tab.id, { src: "..." })`; the native webview is recreated |
+| `tab.webview` | Returns the Tauri `Webview` handle (not an Electron DOM node), decorated with the compat methods below via `tauri-plugin-tabs` |
+| `tab.webview.loadURL(...)` | Supported via `tauri-plugin-tabs` (`navigate_webview`); or `update(tab.id, { src })` to recreate the webview |
+| `tab.webview.send(channel, payload)` | Supported; host → guest, delivered to the guest page's `__TAURI_TABS_GUEST__` (see Guest Pages) |
+| `tab.webview.executeJavaScript(js)` | Supported via `tauri-plugin-tabs` (`eval_webview`) |
+| `tab.webview.openDevTools()` | Supported via `tauri-plugin-tabs` (`open_devtools`; debug build or `devtools` feature) |
+| `tab.webview.addEventListener('ipc-message', …)` | Supported; guest → host, fired when the guest calls `sendToHost` (see Guest Pages) |
 | `webview-ready` | Mapped to Tauri `tauri://created` |
 | `webview-dom-ready` | Mapped to `webview-ready`; Tauri JS does not expose Electron's exact DOM-ready event |
 | `did-fail-load` / renderer crash events | Reported through `tab-error` where Tauri exposes an error |
@@ -316,9 +335,26 @@ Attributes accepted on `<tab-group>`:
 - macOS maps it to a deterministic `dataStoreIdentifier`.
 - Explicit `viewOptions.dataDirectory` or `viewOptions.dataStoreIdentifier` wins over `sessionKey`.
 
+## Guest Pages (host ↔ guest messaging)
+
+A tab's content is a native webview loaded from your URL. To let that guest page talk to the host — the Electron `ipcRenderer.sendToHost` / `ipcRenderer.on` model — include the zero-dependency guest runtime (`tauri-tabs/guest`, shipped as `dist/guest.js`) and use `window.__TAURI_TABS_GUEST__`:
+
+```html
+<script src="/path/to/guest.js"></script>
+<script>
+  const guest = window.__TAURI_TABS_GUEST__;
+  guest.on("RENDER_DATA", (event, payload) => {
+    // host → guest
+  });
+  guest.sendToHost("DATA_REQUEST", { type: "PING" }); // guest → host
+</script>
+```
+
+On the host side, `tab.webview.send(channel, payload)` pushes to the guest, and `tab.webview.addEventListener("ipc-message", e => /* e.channel, e.args */)` receives messages. host → guest is delivered by injecting into the guest through the plugin's `eval`, so the guest needs no Tauri event permission — only `tabs:guest` for the upstream `sendToHost`.
+
 ## Security
 
-The example app grants Tauri permissions only to the main UI webview by using `webviews: ["main"]` in `example/src-tauri/capabilities/default.json`. Dynamic tab webviews use labels such as `tauri-tab-tab-1`, so remote pages do not receive Tauri IPC permissions.
+The example grants host controls (`core:webview:*` + `tabs:host`) only to the main UI webview via `webviews: ["main"]` in `example/src-tauri/capabilities/default.json`. Dynamic tab webviews (`tauri-tab-*`) receive a single minimal capability — `tabs:guest`, which allows only `emit_to_host` — via `example/src-tauri/capabilities/tabs-guest.json`. They cannot create or close webviews, navigate siblings, eval, or reach any other Tauri IPC; a remote guest page can do nothing beyond pushing one ipc-message up to the host.
 
 Required permissions for the main UI are:
 
