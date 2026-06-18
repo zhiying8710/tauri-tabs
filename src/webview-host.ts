@@ -41,6 +41,7 @@ export class WebviewHost {
   private delegate: WebviewHostDelegate | null = null;
   private contentOffset: Offset | null = null;
   private contentOffsetPromise: Promise<Offset> | null = null;
+  private hostOverlayActive = false;
   private syncQueued = false;
   private destroyed = false;
 
@@ -99,6 +100,10 @@ export class WebviewHost {
     if (!hosted.created) {
       return;
     }
+    if (this.hostOverlayActive) {
+      await hosted.webview.hide();
+      return;
+    }
     await this.syncBounds(tabId);
     await hosted.webview.show();
     await hosted.webview.setFocus();
@@ -150,6 +155,23 @@ export class WebviewHost {
     await Promise.allSettled(tasks);
   }
 
+  async setHostOverlayActive(active: boolean) {
+    this.hostOverlayActive = active;
+    const tasks = [...this.views.values()].map(async (hosted) => {
+      if (hosted.closed || !hosted.created) {
+        return;
+      }
+      if (active || !hosted.desiredVisible) {
+        await hosted.webview.hide();
+        return;
+      }
+      await this.syncBounds(hosted.tabId);
+      await hosted.webview.show();
+      await hosted.webview.setFocus();
+    });
+    await Promise.allSettled(tasks);
+  }
+
   async destroy() {
     this.destroyed = true;
     this.resizeObserver.disconnect();
@@ -170,7 +192,9 @@ export class WebviewHost {
     try {
       hosted.created = true;
       await this.syncBounds(tabId);
-      if (hosted.desiredVisible) {
+      if (this.hostOverlayActive) {
+        await hosted.webview.hide();
+      } else if (hosted.desiredVisible) {
         await hosted.webview.show();
         await hosted.webview.setFocus();
       } else {
@@ -331,24 +355,8 @@ export class WebviewHost {
   }
 
   private async readContentOffset(): Promise<Offset> {
-    try {
-      const [innerPosition, outerPosition, scaleFactor] = await Promise.all([
-        this.appWindow.innerPosition(),
-        this.appWindow.outerPosition(),
-        this.appWindow.scaleFactor()
-      ]);
-      const macTitlebarFallback = isProbablyMac() ? 28 : 0;
-      return {
-        x: Math.max(0, Math.round((innerPosition.x - outerPosition.x) / scaleFactor)),
-        y: Math.max(macTitlebarFallback, Math.round((innerPosition.y - outerPosition.y) / scaleFactor))
-      };
-    } catch {
-      const macTitlebarFallback = isProbablyMac() ? 28 : 0;
-      return {
-        x: 0,
-        y: Math.max(macTitlebarFallback, Math.round(window.outerHeight - window.innerHeight))
-      };
-    }
+    // Tauri Webview bounds use the content-area coordinate space already.
+    return { x: 0, y: 0 };
   }
 
   private buildOptions(tab: TabState, bounds: Bounds): WebviewOptions {

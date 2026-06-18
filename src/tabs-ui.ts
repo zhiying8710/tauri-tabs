@@ -28,6 +28,7 @@ export class TabsUI {
 
     this.tabList = document.createElement("div");
     this.tabList.className = "tt-tabs";
+    this.tabList.setAttribute("role", "tablist");
     this.tabList.addEventListener("dragover", (event) => {
       event.preventDefault();
     });
@@ -102,20 +103,34 @@ export class TabsUI {
   }
 
   private renderTab(tab: TabState) {
-    const element = document.createElement("button");
-    element.type = "button";
+    const element = document.createElement("div");
     element.className = "tt-tab";
     element.draggable = this.manager?.options.sortable !== false;
     element.dataset.tabId = tab.id;
     element.title = tab.title;
     element.ariaSelected = String(tab.active);
+    element.setAttribute("role", "tab");
+    element.tabIndex = tab.active ? 0 : -1;
     element.classList.toggle("is-active", tab.active);
     element.classList.toggle("is-error", tab.status === "error");
     addClassNames(element, this.options.tabClassName, tab.className);
     if (tab.active) {
       addClassNames(element, this.options.activeTabClassName);
     }
-    element.addEventListener("click", () => {
+    element.addEventListener("mousedown", (event) => {
+      if (event.button !== 0 || (event.target as Element | null)?.closest("button")) {
+        return;
+      }
+      const manager = this.requireManager();
+      if (manager) {
+        void manager.activate(tab.id);
+      }
+    });
+    element.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") {
+        return;
+      }
+      event.preventDefault();
       const manager = this.requireManager();
       if (manager) {
         void manager.activate(tab.id);
@@ -189,10 +204,16 @@ export class TabsUI {
     if (tab.closable) {
       const close = document.createElement("span");
       close.className = "tt-tab-close";
-      close.title = "Close tab";
-      close.ariaLabel = "Close tab";
-      close.textContent = this.manager?.options.closeButtonText ?? "x";
-      close.addEventListener("click", (event) => {
+      const closeButton = document.createElement("button");
+      closeButton.type = "button";
+      closeButton.title = "Close tab";
+      closeButton.ariaLabel = "Close tab";
+      closeButton.textContent = this.manager?.options.closeButtonText || "×";
+      closeButton.addEventListener("mousedown", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+      });
+      closeButton.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
         const manager = this.requireManager();
@@ -200,6 +221,7 @@ export class TabsUI {
           void manager.close(tab.id);
         }
       });
+      close.appendChild(closeButton);
       element.appendChild(close);
     }
 

@@ -377,6 +377,10 @@ export class TabManager {
     await this.host.syncAll();
   }
 
+  async setHostOverlayActive(active: boolean) {
+    await this.host.setHostOverlayActive(active);
+  }
+
   async destroy() {
     this.destroyed = true;
     await this.host.destroy();

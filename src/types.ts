@@ -118,6 +118,7 @@ export interface TauriTabsApi {
   on<K extends TauriTabsEventName>(eventName: K, handler: TauriTabsHandler<K>): () => void;
   once<K extends TauriTabsEventName>(eventName: K, handler: TauriTabsHandler<K>): () => void;
   syncLayout(): Promise<void>;
+  setHostOverlayActive(active: boolean): Promise<void>;
   destroy(): Promise<void>;
 }
 

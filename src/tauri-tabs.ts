@@ -57,6 +57,7 @@ export function createTauriTabs(rootElement: HTMLElement, options: TauriTabsOpti
       return unlisten;
     },
     syncLayout: () => manager.syncLayout(),
+    setHostOverlayActive: (active) => manager.setHostOverlayActive(active),
     destroy: async () => {
       ui.destroy();
       await manager.destroy();
@@ -118,6 +119,14 @@ export class TauriTabGroupElement extends BaseHTMLElement {
     return this.requireApi().getTabs();
   }
 
+  syncLayout() {
+    return this.requireApi().syncLayout();
+  }
+
+  setHostOverlayActive(active: boolean) {
+    return this.requireApi().setHostOverlayActive(active);
+  }
+
   eachTab(fn: Parameters<TauriTabsApi["eachTab"]>[0], thisArg?: unknown) {
     this.requireApi().eachTab(fn, thisArg);
   }
@@ -149,7 +158,7 @@ export class TauriTabGroupElement extends BaseHTMLElement {
     return {
       newTabButton: this.readBooleanAttribute("new-tab-button"),
       newTabButtonText: this.getAttribute("new-tab-button-text") ?? undefined,
-      closeButtonText: this.getAttribute("close-button-text") ?? undefined,
+      closeButtonText: this.getAttribute("close-button-text") || undefined,
       sortable: this.hasAttribute("sortable") ? this.readBooleanAttribute("sortable") : undefined,
       visibilityThreshold: Number(this.getAttribute("visibility-threshold")) || undefined,
       autoRecoverDetachedTabs: this.readBooleanAttribute("auto-recover-detached-tabs"),

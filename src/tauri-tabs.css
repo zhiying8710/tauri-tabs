@@ -1,44 +1,59 @@
 .tt-shell {
-  --tt-tabbar-height: 38px;
-  --tt-shell-background: #ffffff;
-  --tt-tabbar-background: #edf1f4;
-  --tt-tabbar-border: #cfd7df;
-  --tt-tab-border: #d8dfe6;
-  --tt-tab-title-color: #506071;
-  --tt-tab-title-hover-color: #1d232b;
-  --tt-tab-active-title-color: #141a22;
-  --tt-tab-background: #edf1f4;
-  --tt-tab-hover-background: #f8fafb;
+  --tt-tabbar-height: 32px;
+  --tt-tabgroup-background: var(--tt-tabbar-background, #e7eaed);
+  --tt-tab-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell,
+    "Helvetica Neue", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  --tt-tab-font-size: 13px;
+  --tt-tab-background: #e7eaed;
+  --tt-tab-color: var(--tt-tab-title-color, #696a6c);
+  --tt-tab-border-color: var(--tt-tab-border, var(--tt-tabbar-border, #dadce0));
+  --tt-tab-transition: background-color 200ms ease-out, color 200ms ease-out;
+  --tt-tab-cursor: pointer;
+  --tt-tab-active-color: var(--tt-tab-active-title-color, currentcolor);
   --tt-tab-active-background: #ffffff;
-  --tt-tab-active-accent: #1f8a70;
-  --tt-tab-error-accent: #c94040;
-  --tt-tab-badge-color: #ffffff;
-  --tt-tab-badge-background: #345f8a;
-  --tt-tab-close-color: #6a7480;
-  --tt-tab-close-hover-color: #111820;
-  --tt-tab-close-hover-background: #d8dfe6;
+  --tt-tab-hover-color: var(--tt-tab-title-hover-color, currentcolor);
+  --tt-tab-hover-background: #f1f3f4;
+  --tt-button-font-size: 15px;
+  --tt-button-background: none;
+  --tt-button-color: var(--tt-tab-close-color, #696a6c);
+  --tt-button-hover-background: var(--tt-tab-close-hover-background, #dadce0);
+  --tt-button-hover-color: var(--tt-tab-close-hover-color, #383a3e);
+  --tt-button-border-radius: 50%;
+  --tt-button-cursor: pointer;
+  --tt-badge-background: var(--tt-tab-badge-background, #383a3e);
+  --tt-badge-color: var(--tt-tab-badge-color, #ffffff);
+  --tt-close-button-visibility: visible;
   --tt-view-background: #ffffff;
   display: grid;
   grid-template-rows: var(--tt-tabbar-height) minmax(0, 1fr);
   width: 100%;
   height: 100%;
-  background: var(--tt-shell-background);
+  background: var(--tt-view-background);
+  font-family: var(--tt-tab-font-family);
+  text-rendering: optimizelegibility;
+  font-feature-settings: "liga", "clig", "kern";
 }
 
 .tt-tabbar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
+  width: 100%;
   height: var(--tt-tabbar-height);
-  border-bottom: 1px solid var(--tt-tabbar-border);
-  background: var(--tt-tabbar-background);
+  border-top: 1px solid var(--tt-tab-border-color);
+  background: var(--tt-tabgroup-background);
+  box-shadow: inset 0 -1px var(--tt-tab-border-color);
+  color: var(--tt-tab-color);
+  cursor: default;
+  font-size: var(--tt-tab-font-size);
   user-select: none;
 }
 
-.tt-shell.tt-hide-tabbar {
+.tt-shell.tt-hide-tabbar,
+.tt-shell.tt-overlay-active {
   grid-template-rows: 0 minmax(0, 1fr);
 }
 
-.tt-shell.tt-hide-tabbar .tt-tabbar {
+.tt-shell.tt-hide-tabbar .tt-tabbar,
+.tt-shell.tt-overlay-active .tt-tabbar {
   display: none;
 }
 
@@ -54,62 +69,79 @@
 .tt-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  border-left: 1px solid var(--tt-tab-border);
+  padding: 5px;
+  border-left: 1px solid var(--tt-tab-border-color);
 }
 
 .tt-icon-button,
-.tt-tab {
-  border: 0;
+.tt-tab,
+.tt-tab-close button {
+  border: none;
   appearance: none;
+  font-family: inherit;
 }
 
 .tt-icon-button {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  color: var(--tt-tab-title-color);
-  background: transparent;
-  cursor: pointer;
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  padding: 1px 0 0;
+  border-radius: var(--tt-button-border-radius);
+  color: var(--tt-button-color);
+  background: var(--tt-button-background);
+  cursor: var(--tt-button-cursor);
+  font-size: var(--tt-button-font-size);
+  line-height: 1;
+  text-align: center;
+}
+
+.tt-icon-button[hidden] {
+  display: none;
 }
 
 .tt-icon-button:hover {
-  color: var(--tt-tab-title-hover-color);
-  background: var(--tt-tab-close-hover-background);
+  color: var(--tt-button-hover-color);
+  background: var(--tt-button-hover-background);
 }
 
 .tt-tab {
-  display: inline-grid;
-  grid-template-columns: auto minmax(42px, 1fr) auto auto auto;
+  position: relative;
+  box-sizing: border-box;
+  display: inline-flex;
   align-items: center;
-  gap: 7px;
-  flex: 0 0 190px;
-  max-width: 240px;
-  min-width: 132px;
-  height: var(--tt-tabbar-height);
-  padding: 0 8px 0 10px;
-  border-right: 1px solid var(--tt-tab-border);
-  color: var(--tt-tab-title-color);
+  height: 100%;
+  padding: 5px 9px;
+  color: var(--tt-tab-color);
   background: var(--tt-tab-background);
-  cursor: default;
+  box-shadow: inset 0 -1px var(--tt-tab-border-color);
+  cursor: var(--tt-tab-cursor);
+  font-size: var(--tt-tab-font-size);
+  transition: var(--tt-tab-transition);
+  white-space: nowrap;
 }
 
-.tt-tab:hover {
-  color: var(--tt-tab-title-hover-color);
+.tt-tab:not(.is-active):hover {
+  color: var(--tt-tab-hover-color);
   background: var(--tt-tab-hover-background);
 }
 
-.tt-tab.is-active {
-  color: var(--tt-tab-active-title-color);
-  background: var(--tt-tab-active-background);
-  box-shadow: inset 0 2px var(--tt-tab-active-accent);
+.tt-tab:not(.is-active) + .tt-tab:not(.is-active) {
+  padding-left: 8px;
+  border-left: 1px solid var(--tt-tab-border-color);
 }
 
-.tt-tab.is-error {
-  box-shadow: inset 0 2px var(--tt-tab-error-accent);
+.tt-tab.is-active {
+  padding-right: 8px;
+  padding-left: 8px;
+  border-right: 1px solid var(--tt-tab-border-color);
+  border-left: 1px solid var(--tt-tab-border-color);
+  color: var(--tt-tab-active-color);
+  background: var(--tt-tab-active-background);
+  box-shadow: none;
+}
+
+.tt-tab.is-active:last-child {
+  border-right: none;
 }
 
 .tt-tab.is-dragging {
@@ -117,61 +149,86 @@
 }
 
 .tt-tab-icon {
-  width: 16px;
+  display: inline-block;
+  flex: 0 0 auto;
+  width: auto;
+  max-width: 16px;
   height: 16px;
+  max-height: 16px;
+  object-fit: contain;
 }
 
 .tt-tab-symbol {
+  display: inline-block;
+  flex: 0 0 auto;
   width: 16px;
   height: 16px;
   font-size: 14px;
   line-height: 16px;
 }
 
+.tt-tab-title,
+.tt-tab-close {
+  display: inline-block;
+  margin-left: 10px;
+}
+
 .tt-tab-title {
   min-width: 0;
   overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
   text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tt-tab-badge {
-  display: inline-grid;
-  place-items: center;
-  min-width: 18px;
-  max-width: 48px;
-  height: 16px;
-  padding: 0 5px;
-  border-radius: 8px;
-  color: var(--tt-tab-badge-color);
-  background: var(--tt-tab-badge-background);
-  font-size: 10px;
-  font-weight: 650;
-  line-height: 1;
+  display: inline-block;
+  margin-left: 5px;
+  padding: 1px 4px;
+  border-radius: 5px;
+  color: var(--tt-badge-color);
+  background: var(--tt-badge-background);
+  font-size: 8px;
+  font-weight: bold;
+  line-height: 1.2;
 }
 
 .tt-tab-status {
-  width: 10px;
-  color: var(--tt-tab-error-accent);
+  display: inline-block;
+  min-width: 0;
+  margin-left: 5px;
+  color: #c94040;
   font-size: 12px;
   font-weight: 700;
   text-align: center;
 }
 
-.tt-tab-close {
-  display: grid;
-  place-items: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 5px;
-  color: var(--tt-tab-close-color);
-  cursor: pointer;
+.tt-tab-status:empty {
+  display: none;
 }
 
-.tt-tab-close:hover {
-  color: var(--tt-tab-close-hover-color);
-  background: var(--tt-tab-close-hover-background);
+.tt-tab-close button {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  padding: 1px 0 0;
+  border-radius: var(--tt-button-border-radius);
+  color: var(--tt-button-color);
+  background: var(--tt-button-background);
+  cursor: var(--tt-button-cursor);
+  font-size: var(--tt-button-font-size);
+  line-height: 1;
+  text-align: center;
+  visibility: var(--tt-close-button-visibility);
+}
+
+.tt-tab.is-active .tt-tab-close button {
+  visibility: visible;
+}
+
+.tt-tab-close button:hover {
+  color: var(--tt-button-hover-color);
+  background: var(--tt-button-hover-background);
 }
 
 .tt-view-frame {
